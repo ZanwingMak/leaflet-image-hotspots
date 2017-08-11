@@ -43,7 +43,7 @@
         }
     });
 ```
-[https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue](https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue "https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue")
+[https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue](https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue "https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue") <br/>
 ![](https://o7y8mvdbc.qnssl.com/tc/uploads/1708/111056432901.png) <br/>
 [http://jsfiddle.net/jameslaneconkling/mhpd9ca5](http://jsfiddle.net/jameslaneconkling/mhpd9ca5 "http://jsfiddle.net/jameslaneconkling/mhpd9ca5")
 #### 3.leaflet 添加文字的方法
