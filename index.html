@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <link href="css/leaflet.css" rel="stylesheet" type="text/css" />
+    <!--<link href="https://cdn.bootcss.com/leaflet/0.7.7/leaflet.css" rel="stylesheet">-->
+    <link href="css/leaflet.draw-src.css" rel="stylesheet" type="text/css" />
+    <!--<link href="https://cdn.bootcss.com/leaflet.draw/0.4.10/leaflet.draw-src.css" rel="stylesheet">-->
+    <link href="css/leaflet.label.css" rel="stylesheet">
+    <link href="css/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+    <link href="css/buttons.css" rel="stylesheet" type="text/css" />
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        #image-map {
+            /*width:800px;*/
+            height:600px;
+            position: relative;
+            margin: 20px;
+        }
+        .recovery{
+            display: block;
+            padding: 5px 10px;
+            position: absolute;
+            bottom: 10px;
+            right: 295px;
+            z-index: 233;
+            max-width: 120px;
+        }
+        .changeBG{
+            display: block;
+            padding: 5px 10px;
+            position: absolute;
+            bottom: 10px;
+            right: 170px;
+            z-index: 233;
+            max-width: 120px;
+        }
+        .save{
+            display: block;
+            padding: 5px 10px;
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            z-index: 233;
+            max-width: 120px;
+        }
+        .swal2-modal.swal2-show button{
+            margin-left: 3px;
+            margin-right: 3px;
+        }
+        .leaflet-control-attribution.leaflet-control{
+            display: none;
+        }
+        .areaList{
+            text-align: center
+        }
+        .areaList .areaItem{
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .areaList .areaItem button{
+            padding: 4px 5px;
+        }
+    </style>
+</head>
+<body>
+<div id='image-map'>
+    <button class="recovery">恢复到最初状态</button>
+    <button class="changeBG">更换户型图</button>
+    <input type="file" name="bgURL" id="BGselector" multiple="multiple" accept="image/*" hidden>
+    <button class="save">保存户型图修改</button>
+</div>
+<p style="text-align: center">直接将图片拖拽到页面内也可更换户型图（注意点击"保存户型图",数据暂时保存在浏览器）</p>
+<br>
+<p style="text-align: center">当前可选区域(点击删除),<a href="javascript:void(0);" class="addArea">点我添加更多</a>：</p>
+<ul class="areaList">
+
+</ul>
+
+<script src="js/jquery.min.js"></script>
+<script src="js/sweetalert2.min.js"></script>
+<script src="js/leaflet-src.js"></script>
+<!--<script src="https://cdn.bootcss.com/leaflet/0.7.7/leaflet-src.js"></script>-->
+<script src="js/leaflet.draw-src.js"></script>
+<!--<script src="https://cdn.bootcss.com/leaflet.draw/0.4.10/leaflet.draw-src.js"></script>-->
+<script src="js/leaflet.label.js"></script>
+<!--<script src="js/L.LabelTextCollision.js"></script>-->
+<!--自定义语言-->
+<script src="js/leaflet.draw.lang.zh-cn.js"></script>
+<script src="js/pinyin_dict_firstletter.js"></script>
+<script src="js/pinyinUtil.js"></script>
+<script>
+    var map = null;
+    var drawnItems;
+    var mapDOMid = '';
+    var existPoint = [];
+    var existPoint_bak = [];
+    var Background = '';
+    var Background_bak = '';
+    var areaArr = {};
+    var areaArr_bak = {};
+    var pointAttr = [];
+    var savePoint = [];
+    var weight = 2;
+    var textFontSize_default = 14;
+    var colorList = ["#ffbf26","#ff6438","#2cfff5","#c556ff","#ff4c5f","#0bed07","#4d596c","#8AC007","#ccb324","#FFAD5C","#72ff71","#ff78af","#93adff","#ffb3cf"];
+    function init(domId,imgUrl,callback) {
+            if(typeof(map) != 'undefined' && map != null){map.remove();}
+            var _tmpIMG = new Image();
+            _tmpIMG.src = imgUrl;
+            _tmpIMG.onload = function() {
+            var _tmpThis = this;
+            var _tmpIMG_width = _tmpThis.width;
+            var _tmpIMG_height = _tmpThis.height;
+            map = new L.Map(domId, {
+                editable: true,
+                crs: L.CRS.Simple,
+                maxZoom : 5,
+                minZoom : -5,
+                center : [ $('#'+domId).width() / 2, $('#'+domId).height() / 2 ],
+            });
+
+//            calculate the edges of the image, in coordinate space
+            var southWest = map.unproject([ 0, _tmpIMG_height ], map.getMaxZoom() - 5);
+            var northEast = map.unproject([ _tmpIMG_width, 0 ], map.getMaxZoom() - 5);
+//            var southWest = map.unproject([ 0, _tmpIMG_height ]);
+//            var northEast = map.unproject([ _tmpIMG_width, 0 ]);
+            var bounds = new L.LatLngBounds(southWest, northEast);
+
+            // add the image overlay, so that it covers the entire map
+            var image = L.imageOverlay(imgUrl, bounds).addTo(map);
+
+            // tell leaflet that the map is exactly as big as the image
+            map.setMaxBounds(bounds);
+            map.fitBounds(bounds);
+            drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            var drawControl = new L.Control.Draw({
+                position: 'topright',
+                draw: {
+                    polyline: false,
+                    polygon:  {
+                        allowIntersection: false, // Restricts shapes to simple polygons
+                        showArea: true,
+                        drawError: {
+                            color: '#e1e100', // Color the shape will turn when intersects
+                            message: '<strong>错误<strong>，你不能这么画!'
+                        },
+                        shapeOptions: {
+                            weight : weight
+                        }
+                    },
+                    rectangle: {
+                        shapeOptions: {
+                            /*clickable: false ,*/
+                            weight : weight
+                        }
+                    },
+                    circle: {
+                        shapeOptions: {
+                            weight : weight
+                        }
+                    },
+                    marker:  {
+                        shapeOptions: {
+                            weight : weight
+                        }
+                    }
+                },
+                edit: {
+                    featureGroup: drawnItems,
+                    poly: {
+                        allowIntersection: false
+                    },
+                    remove: true
+                }
+            });
+
+            if(map.addControl(drawControl)){
+                callback();
+            }
+
+            map.on(L.Draw.Event.CREATED, function (e) {
+                var type = e.layerType,
+                    layer = e.layer;
+//                drawnItems.addLayer(layer);
+                layer.addTo(drawnItems);
+                if (type === 'marker') {
+                    swal({
+                        title: '标记',
+                        input: 'text',
+                        showCancelButton: true,
+                        inputValidator: function (value) {
+                            return new Promise(function (resolve, reject) {
+                                if (value) {
+                                    resolve();
+                                } else {
+                                    reject('你得填一下你标记了啥！');
+                                }
+                            })
+                        }
+                    }).then(function (result) {
+                        pointAttr.push({
+                            'leaflet_id': layer._leaflet_id,
+                            'type': type,
+                            'area': result
+                        });
+                        layer.bindLabel(result);
+                        swal({
+                            type: 'success',
+                            html: '您标记了:' + result
+                        });
+                    }, function (dismiss) {
+//                        if (dismiss === 'cancel') {
+//                            drawnItems.removeLayer(layer);
+//                        }
+                        drawnItems.removeLayer(layer);
+                    });
+                }else{
+                    swal({
+                        title: '请选择区域',
+                        input: 'select',
+                        inputOptions: areaArr,
+                        inputPlaceholder: '请选择',
+                        showCancelButton: true,
+                        inputValidator: function (value) {
+                            return new Promise(function (resolve, reject) {
+                                if (value != '') {
+                                    resolve();
+                                } else {
+                                    reject('你还没选择呢！');
+                                }
+                            })
+                        }
+                    }).then(function (result) {
+                        layer.bindLabel(areaArr[result]);
+//                        console.log(layer.getBounds().getCenter());//获取中心点
+//                        console.log(map.latLngToLayerPoint(layer.getBounds().getCenter()));//获取中心点
+
+                        //添加文字
+                        layer.setText(areaArr[result]);
+
+                        pointAttr.push({
+                            'leaflet_id': layer._leaflet_id,
+                            'type': type,
+                            'area': areaArr[result]
+                        });
+                        swal({
+                            type: 'success',
+                            html: '您选择了: ' + areaArr[result]
+                        })
+                    }, function (dismiss) {
+//                        if (dismiss === 'cancel') {
+//                            drawnItems.removeLayer(layer);
+//                        }
+                        drawnItems.removeLayer(layer);
+                    });
+                }
+            });
+
+            map.on(L.Draw.Event.EDITED, function (e) {
+                var layers = e.layers;
+                var countOfEditedLayers = 0;
+                layers.eachLayer(function (layer) {
+//                    console.log(layer);
+                    countOfEditedLayers++;
+                });
+                console.log("修改了 " + countOfEditedLayers + " 个图层");
+            });
+
+
+        };
+    }
+
+//  解决在使用L.CRS.Simple时，画圆出现的问题
+    L.Edit.Circle.include({
+        _move: function (latlng) {
+            var resizemarkerPoint = this._getResizeMarkerPoint(latlng);
+
+            // Move the resize marker
+            this._resizeMarkers[0].setLatLng(resizemarkerPoint);
+
+            // Move the circle
+            this._shape.setLatLng(latlng);
+
+            // output the radius, for debugging purpose.
+            document.getElementById("radius").innerHTML = this._shape._radius;
+        }
+    });
+    // Correct Leaflet L.Circle for use with flat map. Comment the following function to see the original impact on radius when the circle is dragged along the vertical axis.
+    L.Circle.include({
+        _getLngRadius: function () {
+            return this._getLatRadius();
+        }
+    });
+
+    //添加文字
+    var original_getPathString_circle = L.Circle.prototype.getPathString;
+//    console.log(original_getPathString_circle);
+//    console.log(original_getPathString_polygon);
+//    console.log(original_getPathString_rectangle);
+    L.Circle.include({
+        getPathString: function () {
+            var center = this._point,
+                r = this._radius;
+            if (this._textNode && this._textNode.parentNode) {
+                this._path.parentNode.removeChild(this._textNode);
+                delete this._textNode;
+            }
+//            console.log(center);
+//            console.log(map.layerPointToLatLng(center));
+            var textNode = L.Path.prototype._createElement('text');
+
+            textNode.setAttribute('text-anchor', 'middle');
+            textNode.setAttribute('style', 'font-weight:bold');
+            textNode.setAttribute('x', center.x);
+            textNode.setAttribute('y', center.y);
+//            textNode.setAttribute('font-size', Math.pow(1.16, this._map.getZoom()) );
+//            console.log(this._map.getZoom());
+            var font_size;
+            if(this._map.getZoom()>0){
+                font_size = (textFontSize_default+4) * this._map.getZoom()*2;
+            }else{
+                font_size = textFontSize_default;
+            }
+            textNode.setAttribute('font-size', font_size );
+
+            textNode.appendChild(document.createTextNode((this.text)?this.text:''));
+
+            this._path.parentNode.appendChild(textNode);
+
+            this._textNode = textNode;
+
+            return original_getPathString_circle.call(this);
+
+        },
+        setText: function (text) {
+            this.text = text;
+            return this.redraw();
+        }
+
+    });
+
+    var original_getPathString_rectangle = L.Rectangle.prototype.getPathString;
+    L.Rectangle.include({
+        getPathString: function () {
+            var center = map.latLngToLayerPoint(this.getBounds().getCenter());
+            if (this._textNode && this._textNode.parentNode) {
+                this._path.parentNode.removeChild(this._textNode);
+                delete this._textNode;
+            }
+//            console.log(center);
+//            console.log(map.layerPointToLatLng(center));
+            var textNode = L.Path.prototype._createElement('text');
+
+            textNode.setAttribute('text-anchor', 'middle');
+            textNode.setAttribute('style', 'font-weight:bold');
+            textNode.setAttribute('x', center.x);
+            textNode.setAttribute('y', center.y);
+//            textNode.setAttribute('font-size', Math.pow(1.16, this._map.getZoom()) );
+//            console.log(this._map.getZoom());
+            var font_size;
+            if(this._map.getZoom()>0){
+                font_size = (textFontSize_default+4) * this._map.getZoom()*2;
+            }else{
+                font_size = textFontSize_default;
+            }
+            textNode.setAttribute('font-size', font_size );
+
+            textNode.appendChild(document.createTextNode((this.text)?this.text:''));
+
+            this._path.parentNode.appendChild(textNode);
+
+            this._textNode = textNode;
+
+            return original_getPathString_rectangle.call(this);
+
+        },
+        setText: function (text) {
+            this.text = text;
+            return this.redraw();
+        }
+
+    });
+
+
+    var original_getPathString_polygon = L.Polygon.prototype.getPathString;
+    L.Polygon.include({
+        getPathString: function () {
+            var center = map.latLngToLayerPoint(this.getBounds().getCenter());
+            if (this._textNode && this._textNode.parentNode) {
+                this._path.parentNode.removeChild(this._textNode);
+                delete this._textNode;
+            }
+//            console.log(center);
+//            console.log(map.layerPointToLatLng(center));
+            var textNode = L.Path.prototype._createElement('text');
+//            console.log(textNode);
+            textNode.setAttribute('text-anchor', 'middle');
+            textNode.setAttribute('style', 'font-weight:bold');
+            textNode.setAttribute('x', center.x);
+            textNode.setAttribute('y', center.y);
+//            textNode.setAttribute('font-size', Math.pow(1.16, this._map.getZoom()) );
+//            console.log(this._map.getZoom());
+            var font_size;
+            if(this._map.getZoom()>0){
+                font_size = (textFontSize_default+4) * this._map.getZoom()*2;
+            }else{
+                font_size = textFontSize_default;
+            }
+            textNode.setAttribute('font-size', font_size );
+
+            textNode.appendChild(document.createTextNode((this.text)?this.text:''));
+
+            this._path.parentNode.appendChild(textNode);
+
+            this._textNode = textNode;
+
+            return original_getPathString_polygon.call(this);
+
+        },
+        setText: function (text) {
+            this.text = text;
+            return this.redraw();
+        }
+
+    });
+
+    function showPoint(allPoint){
+        $.each(allPoint,function(i,n){
+            switch(n.type){
+                case 'polygon':
+                    var points = [];
+                    $.each(n.latlngs,function(i,n){
+                        points.push([n.lat,n.lng]);
+                    });
+                    var polygon = new L.Polygon(points,{
+                        weight : weight,
+                        color : getColorByRandom()
+                    }).bindLabel(n.area,{autoPan:false}).setText(n.area);
+                    polygon.addTo(drawnItems);
+//                    console.log(polygon.getBounds().getCenter());
+//                    console.log(polygon);
+                    pointAttr.push({
+                        'leaflet_id': polygon._leaflet_id,
+                        'type': n.type,
+                        'area': n.area
+                    });
+                    break;
+                case 'rectangle':
+                    var points = [];
+                    $.each(n.latlngs,function(i,n){
+                        points.push([n.lat,n.lng]);
+                    });
+                    var rectangle = new L.Rectangle(points,{
+                        weight : weight,
+                        color : getColorByRandom()
+                    }).bindLabel(n.area,{autoPan:false}).setText(n.area);
+                    rectangle.addTo(drawnItems);
+//                    console.log(rectangle.getBounds().getCenter());
+                    pointAttr.push({
+                        'leaflet_id': rectangle._leaflet_id,
+                        'type': n.type,
+                        'area': n.area
+                    });
+                    break;
+                case 'circle':
+                    var circle = new L.Circle([n.lat,n.lng],n.radius,{
+                        weight : weight,
+                        color : getColorByRandom()
+                    }).bindLabel(n.area,{autoPan:false}).setText(n.area);
+                    circle.addTo(drawnItems);
+//                    console.log(circle.getBounds().getCenter());
+//                    console.log(map.latLngToLayerPoint(circle.getBounds().getCenter()));
+                    pointAttr.push({
+                        'leaflet_id': circle._leaflet_id,
+                        'type': n.type,
+                        'area': n.area
+                    });
+                    break;
+                case 'marker':
+                    var marker = new L.Marker([n.lat,n.lng],{
+                        weight : weight,
+                        color : getColorByRandom()
+                    }).bindLabel(n.area,{autoPan:false});
+                    marker.addTo(drawnItems);
+                    pointAttr.push({
+                        'leaflet_id': marker._leaflet_id,
+                        'type': n.type,
+                        'area': n.area
+                    });
+                    break;
+            }
+        });
+    }
+
+    function savePoints(){
+        savePoint = [];
+        $.each(drawnItems._layers,function(i,n){
+            var attr;
+            for(var k=0;k<pointAttr.length;k++){
+                if(n._leaflet_id == pointAttr[k].leaflet_id){
+                    attr = pointAttr[k];
+                    break;
+                }
+            }
+            switch(attr.type){
+                case 'marker':
+                    savePoint.push({
+                        'type': attr.type,
+                        'area': attr.area,
+                        'lat': n._latlng.lat,
+                        'lng': n._latlng.lng
+                    });
+                    break;
+                case 'circle':
+                    savePoint.push({
+                        'type': attr.type,
+                        'area': attr.area,
+                        'lat': n._latlng.lat,
+                        'lng': n._latlng.lng,
+                        'radius': n._mRadius
+                    });
+                    break;
+               case 'polygon':
+               case 'rectangle':
+                    var tmp = [];
+                    $.each(n._latlngs,function(j,o){
+                        tmp[j] = {
+                            'lat': o.lat,
+                            'lng': o.lng
+                        };
+                    });
+                    savePoint.push({
+                        'type': attr.type,
+                        'area': attr.area,
+                        'latlngs': tmp
+                    });
+                    break;
+            }
+        });
+    }
+
+    //保存
+    $('.save').on('click',function(){
+        swal({
+            title: '确定要保存修改吗？',
+            text: "区域和选项都将被保存",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            confirmButtonClass: 'btn btn-success',
+            cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        }).then(function () {
+            savePoints();
+//            console.log(JSON.stringify(savePoint));
+            localStorage.pointData = JSON.stringify(savePoint);
+            localStorage.backgroundURL = Background;
+            localStorage.areaList = JSON.stringify(areaArr);
+            swal(
+                '成功',
+                '户型图已修改',
+                'success'
+            )
+        }, function (dismiss) {
+            // dismiss can be 'cancel', 'overlay',
+            // 'close', and 'timer'
+            if (dismiss === 'cancel') {
+                swal(
+                    '取消',
+                    '已取消修改',
+                    'error'
+                );
+            }
+        })
+    });
+
+    //拖拽图片到页面更换背景
+    window.addEventListener("dragenter", function(event) { event.preventDefault(); }, false);
+    window.addEventListener("dragover", function(event) { event.preventDefault(); }, false);
+    window.addEventListener("drop", function(event) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            Background =  e.target.result;
+            init(mapDOMid,Background,function(){
+                existPoint = [];
+                showPoint(existPoint);
+            });
+        };
+        reader.readAsDataURL(event.dataTransfer.files[0]);
+        event.preventDefault();
+    }, false);
+
+    //弹出对话框选择图片更换背景
+    $('#BGselector').on('change',function(){
+        var reader = new FileReader();
+        if(typeof(this.files) != 'undefined' && this.files.length > 0){
+            reader.readAsDataURL(this.files[0]);
+            reader.onload = function(e){
+                Background = e.target.result;
+                $('#BGselector').attr('value',e.target.result);
+                init(mapDOMid,Background,function(){
+                    existPoint = [];
+                    showPoint(existPoint);
+                });
+            };
+        }
+    });
+    //触发文件选择框
+    $('.changeBG').on('click',function(){
+        $('#BGselector').trigger('click');
+    });
+
+    //重置、恢复按钮
+    $('.recovery').on('click',function(){
+        swal({
+            title: '确定要恢复到最初状态吗？',
+            text: "区域和选项都恢复到最初状态，需要手动点击保存修改",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            confirmButtonClass: 'btn btn-success',
+            cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        }).then(function () {
+            areaArr = jQuery.extend(true, {}, areaArr_bak);
+            $('.areaList').html('');
+            $.each(areaArr,function(i,n){
+                $('.areaList').append('<li class="areaItem"><button>'+n+'</button></li>');
+            });
+            init(mapDOMid,Background_bak,function(){
+                showPoint(existPoint_bak);
+            });
+            swal(
+                '成功',
+                '已恢复到最初状态(需要手动保存)',
+                'success'
+            )
+        }, function (dismiss) {
+            // dismiss can be 'cancel', 'overlay',
+            // 'close', and 'timer'
+            if (dismiss === 'cancel') {
+                swal(
+                    '取消',
+                    '已取消',
+                    'error'
+                );
+            }
+        });
+    });
+    //点击可选区域按钮删除
+    $('body').on('click','.areaList .areaItem button',function(e){
+        var _this = $(this);
+        swal({
+            title: '确定要删除该区域吗？',
+            text: "",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            confirmButtonClass: 'btn btn-success',
+            cancelButtonClass: 'btn btn-danger',
+            buttonsStyling: false
+        }).then(function () {
+            _this.parent().remove();
+            delete areaArr[_this.text()];
+//            console.log(areaArr);
+            swal(
+                '成功',
+                '删除成功',
+                'success'
+            )
+        }, function (dismiss) {
+            if (dismiss === 'cancel') {
+                swal(
+                    '取消',
+                    '已取消',
+                    'error'
+                )
+            }
+        })
+    });
+    $('.addArea').on('click',function(){
+        swal.setDefaults({
+            input: 'text',
+            confirmButtonText: 'Next &rarr;',
+            showCancelButton: true,
+            animation: false,
+            progressSteps: ['1', '2']
+        });
+        var steps = [
+            {
+                title: '请输入"名称"',
+                text: '请输入要添加的区域"名称",如：客厅。已存在的则会被覆盖,可改填：客厅2'
+            },
+            {
+                title: '请输入"缩写"',
+                text: '请输入刚刚添加的区域名称的"缩写",如：kt。不填则默认取首字母,已存在的会被覆盖,可改填：kt2'
+            }
+        ];
+        swal.queue(steps).then(function (result) {
+            swal.resetDefaults();
+
+            result[1] = result[1].toLowerCase();
+            if(result[1].trim() == ''){
+                result[1] = pinyinUtil.getFirstLetter(result[0].trim(), false).toLowerCase();
+//                console.log(result[1]);
+            }
+            if(result[1] in areaArr ){
+//                console.log(result[0]);
+//                console.log(result[1]);
+                swal({
+                    title: '失败',
+                    html: '添加失败,缩写"'+result[1]+'"已存在,可尝试："'+result[1]+'+数字"',
+                    confirmButtonText: '好的',
+                    showCancelButton: false
+                });
+                return false;
+            }
+
+            if(result[0].trim() == ''){
+                swal({
+                    title: '失败',
+                    html: '添加失败,名称不能为空',
+                    confirmButtonText: '好的',
+                    showCancelButton: false
+                });
+                return false;
+            }
+
+            var nameList = [];
+            $.each(areaArr,function(i,n){
+                nameList.push(n);
+            });
+//            console.log(nameList);
+            if($.inArray(result[0],nameList) >= 0){ //大于等于0：存在,-1：不存在
+                swal({
+                    title: '失败',
+                    html: '添加失败,名称"'+result[0]+'"已存在,可尝试"'+result[0]+'+数字"',
+                    confirmButtonText: '好的',
+                    showCancelButton: false
+                });
+                return false;
+            }
+
+
+            areaArr[result[1]] = result[0];
+            $('.areaList').html('');
+            $.each(areaArr,function(i,n){
+                $('.areaList').append('<li class="areaItem"><button>'+n+'</button></li>');
+            });
+            swal({
+                title: '成功',
+                html: '添加成功,名称：'+result[0]+'、缩写：'+result[1],
+                confirmButtonText: '好的',
+                showCancelButton: false
+            })
+
+        }, function () {//取消、关闭
+            swal.resetDefaults();
+        })
+    });
+
+    function getRandomColor(){//随机颜色
+        return '#'+Math.floor(Math.random()*16777215).toString(16);
+    }
+    function getColorByRandom(){//随机取出列表内的颜色
+        var colorIndex = Math.floor(Math.random()*colorList.length);
+        var color = colorList[colorIndex];
+//        colorList.splice(colorIndex,1);//除去抽中项
+        return color;
+    }
+    $(document).ready(function(){
+        mapDOMid = 'image-map';
+        //获取数据库的数据
+        if( (typeof(localStorage.firstData) == 'undefined') || localStorage.firstData != 'false' ){
+            //测试期间的初始数据
+            localStorage.firstData = 'false';
+            existPoint = [{"type":"polygon","area":"阳台","latlngs":[{"lat":-16,"lng":922},{"lat":-40,"lng":850},{"lat":-70,"lng":918},{"lat":-38,"lng":976}]},{"type":"rectangle","area":"卫生间","latlngs":[{"lat":-722,"lng":680},{"lat":-498,"lng":680},{"lat":-498,"lng":828},{"lat":-722,"lng":828}]},{"type":"circle","area":"厨房","lat":-500,"lng":196,"radius":13463217.403457522}];
+            Background = 'img/1.jpg';
+            areaArr = {
+                kt: '客厅',
+                yt: '阳台',
+                ws: '卧室',
+                wsj: '卫生间',
+                lt: '楼梯',
+                rhm: '入户门',
+                sk: '上空',
+                zl: '走廊'
+            };
+            localStorage.areaList = JSON.stringify(areaArr);
+        }else{
+            //测试期间从浏览器本地储存提取数据
+            if( (typeof(localStorage.pointData) != 'undefined') && localStorage.pointData != null && localStorage.pointData != '' ){
+                existPoint = JSON.parse(localStorage.pointData);
+                Background = localStorage.backgroundURL;
+                areaArr = JSON.parse(localStorage.areaList);
+            }else{//如果没有就用默认数据
+                existPoint = [];
+                Background = 'img/1.jpg';
+                areaArr = {
+                    kt: '客厅',
+                    yt: '阳台',
+                    ws: '卧室',
+                    wsj: '卫生间',
+                    lt: '楼梯',
+                    rhm: '入户门',
+                    sk: '上空',
+                    zl: '走廊'
+                };
+            }
+        }
+        $.each(areaArr,function(i,n){
+            $('.areaList').append('<li class="areaItem"><button>'+n+'</button></li>');
+        });
+        //数据备份
+        existPoint_bak = existPoint;
+        Background_bak = Background;
+        areaArr_bak = jQuery.extend(true, {}, areaArr);
+        init(mapDOMid,Background,function(){
+            showPoint(existPoint);
+        });
+
+    });
+</script>
+</body>
+</html>
