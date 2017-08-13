@@ -10,6 +10,8 @@
 [jquery](https://github.com/jquery/jquery "jquery")(v3.1.1)
 ### Demo
 [http://demo.gfwboom.com/hotspots](http://demo.gfwboom.com/hotspots "http://demo.gfwboom.com/hotspots")
+### Blog
+[https://gfwboom.com/archives/code/javascript/2017/08/11/303.html](https://gfwboom.com/archives/code/javascript/2017/08/11/303.html "https://gfwboom.com/archives/code/javascript/2017/08/11/303.html")
 ### Github
 [https://github.com/maizhenying09/leaflet-image-hotspots](https://github.com/maizhenying09/leaflet-image-hotspots "https://github.com/maizhenying09/leaflet-image-hotspots")
 
