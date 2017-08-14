@@ -3,15 +3,13 @@
 
 ### 使用
 [leaflet](https://github.com/Leaflet/Leaflet "leaflet")(v0.7.7) <br/>
-[leaflet.draw](https://github.com/Leaflet/Leaflet.draw "leaflet.draw")(v0.4.10) <br/>
+[leaflet.draw](https://github.com/Leaflet/Leaflet.draw "leaflet.draw")(v0.4.9) <br/>
 [leaflet.label](https://github.com/Leaflet/Leaflet.label "leaflet.label") <br/>
 [sweetalert2](https://github.com/limonte/sweetalert2 "sweetalert2") <br/>
 [pinyinjs](https://github.com/sxei/pinyinjs "pinyinjs") <br/>
 [jquery](https://github.com/jquery/jquery "jquery")(v3.1.1)
 ### Demo
 [http://demo.gfwboom.com/hotspots](http://demo.gfwboom.com/hotspots "http://demo.gfwboom.com/hotspots")
-### Blog
-[https://gfwboom.com/archives/code/javascript/2017/08/11/303.html](https://gfwboom.com/archives/code/javascript/2017/08/11/303.html "https://gfwboom.com/archives/code/javascript/2017/08/11/303.html")
 ### Github
 [https://github.com/maizhenying09/leaflet-image-hotspots](https://github.com/maizhenying09/leaflet-image-hotspots "https://github.com/maizhenying09/leaflet-image-hotspots")
 
@@ -19,8 +17,8 @@
 #### 1.用代码添加了一个多边形但是无法通过点击工具栏来编辑的原因 <br/>
 应该addTo(drawnItems)而不是addTo(map) <br/>
 [https://github.com/Leaflet/Leaflet.draw/issues/159](https://github.com/Leaflet/Leaflet.draw/issues/159 "https://github.com/Leaflet/Leaflet.draw/issues/159") <br/>
-![](https://o7y8mvdbc.qnssl.com/tc/uploads/1708/111053399162.png) <br/>
-![](https://o7y8mvdbc.qnssl.com/tc/uploads/1708/111054029615.png) <br/>
+![](https://o7y8mvdbc.qnssl.com/tc/uploads/1708/111053399162.png)
+![](https://o7y8mvdbc.qnssl.com/tc/uploads/1708/111054029615.png)
 #### 2.leaflet在使用CRS.Simple坐标时画圆的问题
 添加以下代码：
 ```javascript
@@ -45,7 +43,7 @@
         }
     });
 ```
-[https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue](https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue "https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue") <br/>
+[https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue](https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue "https://stackoverflow.com/questions/29366268/leaflet-circle-drawing-editing-issue")
 ![](https://o7y8mvdbc.qnssl.com/tc/uploads/1708/111056432901.png) <br/>
 [http://jsfiddle.net/jameslaneconkling/mhpd9ca5](http://jsfiddle.net/jameslaneconkling/mhpd9ca5 "http://jsfiddle.net/jameslaneconkling/mhpd9ca5")
 #### 3.leaflet 添加文字的方法
