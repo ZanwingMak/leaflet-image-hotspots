@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title></title>
+    <title>户型图</title>
     <link href="css/leaflet.css" rel="stylesheet" type="text/css" />
     <!--<link href="https://cdn.bootcss.com/leaflet/0.7.7/leaflet.css" rel="stylesheet">-->
     <link href="css/leaflet.draw-src.css" rel="stylesheet" type="text/css" />
-    <!--<link href="https://cdn.bootcss.com/leaflet.draw/0.4.10/leaflet.draw-src.css" rel="stylesheet">-->
+    <!--<link href="https://cdn.bootcss.com/leaflet.draw/0.4.9/leaflet.draw-src.css" rel="stylesheet">-->
     <link href="css/leaflet.label.css" rel="stylesheet">
     <link href="css/sweetalert2.min.css" rel="stylesheet" type="text/css" />
     <link href="css/buttons.css" rel="stylesheet" type="text/css" />
@@ -86,7 +86,7 @@
 <script src="js/leaflet-src.js"></script>
 <!--<script src="https://cdn.bootcss.com/leaflet/0.7.7/leaflet-src.js"></script>-->
 <script src="js/leaflet.draw-src.js"></script>
-<!--<script src="https://cdn.bootcss.com/leaflet.draw/0.4.10/leaflet.draw-src.js"></script>-->
+<!--<script src="https://cdn.bootcss.com/leaflet.draw/0.4.9/leaflet.draw-src.js"></script>-->
 <script src="js/leaflet.label.js"></script>
 <!--<script src="js/L.LabelTextCollision.js"></script>-->
 <!--自定义语言-->
@@ -121,7 +121,7 @@
                 crs: L.CRS.Simple,
                 maxZoom : 5,
                 minZoom : -5,
-                center : [ $('#'+domId).width() / 2, $('#'+domId).height() / 2 ],
+                center : [ $('#'+domId).width() / 2, $('#'+domId).height() / 2 ]
             });
 
 //            calculate the edges of the image, in coordinate space
@@ -562,7 +562,8 @@
             buttonsStyling: false
         }).then(function () {
             savePoints();
-//            console.log(JSON.stringify(savePoint));
+            console.log(savePoint);
+            console.log(JSON.stringify(savePoint));
             localStorage.pointData = JSON.stringify(savePoint);
             localStorage.backgroundURL = Background;
             localStorage.areaList = JSON.stringify(areaArr);
@@ -694,6 +695,7 @@
             }
         })
     });
+
     $('.addArea').on('click',function(){
         swal.setDefaults({
             input: 'text',
