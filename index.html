@@ -120,15 +120,17 @@
                 editable: true,
                 crs: L.CRS.Simple,
                 maxZoom : 5,
-                minZoom : -5,
+                minZoom : -2,
                 center : [ $('#'+domId).width() / 2, $('#'+domId).height() / 2 ]
             });
 
 //            calculate the edges of the image, in coordinate space
-            var southWest = map.unproject([ 0, _tmpIMG_height ], map.getMaxZoom() - 5);
-            var northEast = map.unproject([ _tmpIMG_width, 0 ], map.getMaxZoom() - 5);
+            var southWest = map.unproject([ 0, 0 ], map.getMinZoom() - 5);
+            var northEast = map.unproject([ _tmpIMG_width,_tmpIMG_height ], map.getMaxZoom() - 5);
 //            var southWest = map.unproject([ 0, _tmpIMG_height ]);
 //            var northEast = map.unproject([ _tmpIMG_width, 0 ]);
+//            var southWest = map.unproject([ 0, 0 ]);
+//            var northEast = map.unproject([ _tmpIMG_width, _tmpIMG_height ]);
             var bounds = new L.LatLngBounds(southWest, northEast);
 
             // add the image overlay, so that it covers the entire map
@@ -248,7 +250,8 @@
                         pointAttr.push({
                             'leaflet_id': layer._leaflet_id,
                             'type': type,
-                            'area': areaArr[result]
+                            'area': areaArr[result],
+                            'area_id': result
                         });
                         swal({
                             type: 'success',
@@ -272,8 +275,6 @@
                 });
                 console.log("修改了 " + countOfEditedLayers + " 个图层");
             });
-
-
         };
     }
 
@@ -449,7 +450,8 @@
                     pointAttr.push({
                         'leaflet_id': polygon._leaflet_id,
                         'type': n.type,
-                        'area': n.area
+                        'area': n.area,
+                        'area_id': n.area_id
                     });
                     break;
                 case 'rectangle':
@@ -466,7 +468,8 @@
                     pointAttr.push({
                         'leaflet_id': rectangle._leaflet_id,
                         'type': n.type,
-                        'area': n.area
+                        'area': n.area,
+                        'area_id': n.area_id
                     });
                     break;
                 case 'circle':
@@ -480,7 +483,8 @@
                     pointAttr.push({
                         'leaflet_id': circle._leaflet_id,
                         'type': n.type,
-                        'area': n.area
+                        'area': n.area,
+                        'area_id': n.area_id
                     });
                     break;
                 case 'marker':
@@ -522,6 +526,7 @@
                     savePoint.push({
                         'type': attr.type,
                         'area': attr.area,
+                        'area_id': attr.area_id,
                         'lat': n._latlng.lat,
                         'lng': n._latlng.lng,
                         'radius': n._mRadius
@@ -539,6 +544,7 @@
                     savePoint.push({
                         'type': attr.type,
                         'area': attr.area,
+                        'area_id': attr.area_id,
                         'latlngs': tmp
                     });
                     break;
@@ -792,7 +798,7 @@
         if( (typeof(localStorage.firstData) == 'undefined') || localStorage.firstData != 'false' ){
             //测试期间的初始数据
             localStorage.firstData = 'false';
-            existPoint = [{"type":"polygon","area":"阳台","latlngs":[{"lat":-16,"lng":922},{"lat":-40,"lng":850},{"lat":-70,"lng":918},{"lat":-38,"lng":976}]},{"type":"rectangle","area":"卫生间","latlngs":[{"lat":-722,"lng":680},{"lat":-498,"lng":680},{"lat":-498,"lng":828},{"lat":-722,"lng":828}]},{"type":"circle","area":"厨房","lat":-500,"lng":196,"radius":13463217.403457522}];
+            existPoint = [{"type":"rectangle","area":"卧室","area_id":"ws","latlngs":[{"lat":-300,"lng":510},{"lat":-122,"lng":510},{"lat":-122,"lng":718},{"lat":-300,"lng":718}]},{"type":"rectangle","area":"卫生间","area_id":"wsj","latlngs":[{"lat":-684,"lng":676},{"lat":-506,"lng":676},{"lat":-506,"lng":802},{"lat":-684,"lng":802}]},{"type":"rectangle","area":"卧室","area_id":"ws","latlngs":[{"lat":-320,"lng":282},{"lat":-220,"lng":282},{"lat":-220,"lng":408},{"lat":-320,"lng":408}]}];
             Background = 'img/1.jpg';
             areaArr = {
                 kt: '客厅',
