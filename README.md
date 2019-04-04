@@ -11,7 +11,7 @@
 ### Demo
 [http://demo.laji.blog/hotspots](http://demo.laji.blog/hotspots "http://demo.laji.blog/hotspots")
 ### Github
-[https://github.com/maizhenying09/leaflet-image-hotspots](https://github.com/maizhenying09/leaflet-image-hotspots "https://github.com/maizhenying09/leaflet-image-hotspots")
+[https://github.com/xiaomai0830/leaflet-image-hotspots](https://github.com/xiaomai0830/leaflet-image-hotspots "https://github.com/xiaomai0830/leaflet-image-hotspots")
 
 ###遇到的各种问题的解决方法和解答出处 <br/>
 #### 1.用代码添加了一个多边形但是无法通过点击工具栏来编辑的原因 <br/>
