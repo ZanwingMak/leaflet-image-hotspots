@@ -9,7 +9,7 @@
 [pinyinjs](https://github.com/sxei/pinyinjs "pinyinjs") <br/>
 [jquery](https://github.com/jquery/jquery "jquery")(v3.1.1)
 ### Demo
-[http://demo.gfwboom.com/hotspots](http://demo.gfwboom.com/hotspots "http://demo.gfwboom.com/hotspots")
+[http://demo.laji.blog/hotspots](http://demo.laji.blog/hotspots "http://demo.laji.blog/hotspots")
 ### Github
 [https://github.com/maizhenying09/leaflet-image-hotspots](https://github.com/maizhenying09/leaflet-image-hotspots "https://github.com/maizhenying09/leaflet-image-hotspots")
 
